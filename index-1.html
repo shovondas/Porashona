@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>পড়াশোনা সাথী</title>
+<style>
+:root{--bg:#f3f1ea;--card:#faf9f5;--ink:#1c1b18;--mut:#6b675e;--line:#dcd8cb;--pri:#0a6cf0;--ok:#2a6b46;--red:#b32d1e;--l0:#e8e4da;--l1:#adc3dc;--l2:#79a1d3;--l3:#3b7bd0;--l4:#0b5fcc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1917;--card:#23221f;--ink:#f0ede4;--mut:#a09b8f;--line:#3a3833;--l0:#35332e}}
+:root[data-theme="dark"]{--bg:#1a1917;--card:#23221f;--ink:#f0ede4;--mut:#a09b8f;--line:#3a3833;--l0:#35332e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans Bengali","Hind Siliguri",system-ui,sans-serif;line-height:1.5}
+main{max-width:640px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+h1{font-size:22px;margin:0;color:#0aa77a}
+h2{font-size:18px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin:14px 0}
+.mut{color:var(--mut);font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+button,select,input{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+button.p{background:var(--pri);color:#fff;border:0}
+.days{background:#f5e3e0;color:var(--red);border-radius:16px;padding:8px 16px;text-align:center}
+.days b{font-size:34px;display:block;line-height:1.1}
+.bar{height:8px;background:var(--l0);border-radius:8px;overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;background:var(--ok)}
+.task{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.task:first-of-type{border-top:0}
+.chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);flex:none;padding:0;background:none}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.task.done .t{text-decoration:line-through;color:var(--mut)}
+.t{flex:1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stats b{font-size:24px;display:block}
+.big{font-size:44px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin:14px 0}
+.grid span{aspect-ratio:1;border-radius:5px;border:1px solid var(--line)}
+.grid .today{outline:2px solid var(--ink)}
+.sub{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.ring{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none}
+.ring i{width:36px;height:36px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-style:normal;font-size:14px}
+.w{display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line);gap:8px}
+form{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+form select,form input{flex:1;min-width:120px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+</head>
+<body>
+<main>
+<header><h1>পড়াশোনা সাথী</h1><span id="st" class="mut"></span><button id="theme" aria-label="থিম">◐</button></header>
+<div id="app"></div>
+</main>
+<script>
+const BCS=[
+["বাংলা ভাষা ও সাহিত্য",30,[["ভাষা ও বাংলা ভাষা রীতি",3],["ধ্বনি ও বর্ণ-প্রকরণ",3],["বাংলা ব্যাকরণ ও এর আলোচ্য বিষয়",3],["গুরুত্বপূর্ণ কবি-সাহিত্যিক",3.5],["আধুনিক যুগের অন্যান্য লেখক",4.2]]],
+["ইংরেজি ভাষা ও সাহিত্য",30,[["Parts of Speech",3],["Tense ও Right form of verbs",3],["Vocabulary ও Synonyms",3],["Translation",2.5]]],
+["বাংলাদেশ বিষয়াবলি",25,[["মুক্তিযুদ্ধ ও স্বাধীনতা",4],["সংবিধান",3.5],["অর্থনীতি ও উন্নয়ন",3]]],
+["আন্তর্জাতিক বিষয়াবলি",25,[["মহাদেশ, দেশ, রাজধানী, মুদ্রা ও স্থান",6.2],["জাতিসংঘ ও আন্তর্জাতিক সংস্থা",4]]],
+["ভূগোল, পরিবেশ ও দুর্যোগ ব্যবস্থাপনা",10,[["ভৌগোলিক অঞ্চল, সীমানা ও ভূরাজনৈতিক গুরুত্ব",3.2],["দুর্যোগ ব্যবস্থাপনা",2.5]]],
+["সাধারণ বিজ্ঞান",15,[["পদার্থবিজ্ঞান",4.2],["রসায়ন",3],["জীববিজ্ঞান",3]]],
+["কম্পিউটার ও তথ্যপ্রযুক্তি",15,[["কম্পিউটারের মৌলিক ধারণা",2.5],["ইন্টারনেট ও নিরাপত্তা",2.5]]],
+["নৈতিকতা, মানসিক দক্ষতা",20,[["সুশাসন",5.6],["ভাষাগত যৌক্তিক বিচার (Verbal Reasoning)",3.2]]]
+];
+const EXAMS={bcs:{n:'বিসিএস',s:BCS,max:200,neg:0.5},
+bank:{n:'ব্যাংক (সহকারী পরিচালক)',max:200,neg:0.25,s:[
+['ইংরেজি',70,[['Focus Writing (সাম্প্রতিক বৈশ্বিক/বাংলাদেশ বিষয়)',30],['Bangla to English Translation',20],['Sentence structure ও Subject-verb agreement',4],['Finite ও Non-finite verb',3],['Transformation of sentences',3],['Speech (Narration)',3],['Clause ও Phrase',3],['Group verb ও Idioms',2],['Right forms of verb',2]]],
+['বাংলা',40,[['ফোকাস রাইটিং (সাম্প্রতিক বৈশ্বিক/বাংলাদেশ বিষয়)',30],['বানান ও বানানের নিয়ম',1.5],['বাক্যশুদ্ধি',1.5],['প্রবাদ-প্রবচনের নিহিতার্থ প্রকাশ',1.5],['কারক',1.5],['সমাস',1.5],['সন্ধি বিচ্ছেদ',1],['এক কথায় প্রকাশ',1],['প্রায় সমোচ্চারিত ভিন্নার্থক শব্দ',0.5]]],
+['গণিত (এসএসসি স্তর)',30,[['সাধারণ গণিত (এসএসসি স্তর)',30]]],
+['সাধারণ জ্ঞান',10,[['সাধারণ জ্ঞান',10]]],
+['অ্যানালিটিক্যাল রিজনিং ও ক্রিটিক্যাল থিংকিং',40,[['Analytical Reasoning, Critical Thinking ও Argumentative Writing',40]]],
+['আর্থিক ও ব্যাংকিং জ্ঞান',10,[['আর্থিক ও ব্যাংকিং জ্ঞান',10]]],
+['আইসিটি (শুধু প্রিলিমিনারি)',10,[['ICT-র মৌলিক জ্ঞান',10]]]]},
+teacher:{n:'সহকারী শিক্ষক (প্রাথমিক)',max:90,neg:0.25,s:[
+['বাংলা',25,[['বাংলা (ব্যাকরণ ও সাহিত্য)',25]]],
+['ইংরেজি',25,[['English (Grammar ও Language)',25]]],
+['গণিত ও দৈনন্দিন বিজ্ঞান',20,[['গণিত',10],['দৈনন্দিন বিজ্ঞান',10]]],
+['সাধারণ জ্ঞান',20,[['বাংলাদেশ বিষয়াবলি',10],['আন্তর্জাতিক বিষয়াবলি',10]]]]}};
+const SUBJ=BCS.slice();
+const MX=()=>EXAMS[S.exam].max,NEGT=()=>Number(EXAMS[S.exam].neg).toLocaleString('bn-BD',{maximumFractionDigits:2});
+const bn=n=>Number(n).toLocaleString('bn-BD',{maximumFractionDigits:1});
+const DAY=864e5, today0=()=>{const d=new Date();d.setHours(0,0,0,0);return +d};
+const SB=supabase.createClient('https://eqjfxdprejkdppicitqj.supabase.co','sb_publishable_gML1ebcq8A__DRBzfXzsow_5k8gyfmF');
+let UID=null,UEMAIL='',S=null;let BASE=SUBJ.length;
+let tm,EDIT=null,OPEN=null,SEL=null,WK=null,ONB=false,QDB=[],AUTHV='login',AMSG='',AOK=false,RECOV=false;
+const setSt=t=>{const e=document.getElementById('st');if(e)e.textContent=t};
+const ds=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function push(){if(!UID||!S)return;clearTimeout(tm);tm=setTimeout(async()=>{try{const a=await SB.from('ps_state').upsert({user_id:UID,data:S,updated_at:new Date().toISOString()});if(a.error)throw a.error;const b=await SB.from('ps_profiles').upsert({id:UID,name:S.name||'',email:UEMAIL,total_days:S.total,goal:Math.round(MX()*.65),sel:S.sel||null,onboarded:!!S.onboarded,start_date:ds(S.start)});if(b.error)throw b.error;setSt('\u2601 \u09b8\u09bf\u0999\u09cd\u0995 \u09b9\u09af\u09bc\u09c7\u099b\u09c7')}catch(e){setSt('\u09b8\u09bf\u0999\u09cd\u0995 \u09ac\u09cd\u09af\u09b0\u09cd\u09a5')}},800)}
+const save=()=>{push()};
+function topics(){const a=[];SUBJ.forEach((s,i)=>s[2].forEach((t,j)=>a.push({id:i+'-'+j,s:i,n:t[0],w:t[1]})));
+ S.custom.forEach((c,k)=>a.push({id:'c'+k,s:c.s,n:c.n,w:c.w||3}));return a.filter(t=>!(S.over[t.id]&&S.over[t.id].del)).filter(t=>!S.sel||S.sel.includes(t.s)).map(t=>S.over[t.id]&&S.over[t.id].n?{...t,n:S.over[t.id].n}:t)}
+const dayIdx=()=>Math.floor((today0()-S.start)/DAY);
+const hs=s=>{let h=7;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h};
+const shuf=(a,d=7)=>{const w=Math.floor(dayIdx()/d);return [...a].sort((x,y)=>hs(x.id+':'+w)-hs(y.id+':'+w))};
+const used=()=>{const k=String(dayIdx()),s=new Set();for(const d in S.plan)if(d!==k)S.plan[d].forEach(i=>s.add(i));return s};
+const pickFor=(day,ex,pool,n=3,strict)=>{const rk=a=>[...a].sort((x,y)=>hs(x.id+':'+day)-hs(y.id+':'+day)),fr=rk(pool.filter(t=>!ex.has(t.id))),p=[],sn=new Set();fr.forEach(t=>{if(p.length<n&&!sn.has(t.s)){sn.add(t.s);p.push(t)}});fr.forEach(t=>{if(p.length<n&&!p.includes(t))p.push(t)});if(!strict)rk(pool.filter(t=>ex.has(t.id))).forEach(t=>{if(p.length<n)p.push(t)});return p};
+function plan(){const k=String(dayIdx());
+ if(!S.plan[k]){const pend=pickFor(dayIdx(),used(),topics().filter(t=>!S.done[t.id]));S.plan[k]=pend.map(t=>t.id);save()}
+ return S.plan[k]}
+let VIEW=null,TMR=null,DUR=25,LAST=null,READY=false;
+try{TMR=JSON.parse(localStorage.getItem('sp1t'))}catch(e){}
+const saveT=()=>{try{TMR?localStorage.setItem('sp1t',JSON.stringify(TMR)):localStorage.removeItem('sp1t')}catch(e){}};
+const p2=n=>Number(n).toLocaleString('bn-BD',{minimumIntegerDigits:2,useGrouping:false});
+const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return p2(Math.floor(s/60))+':'+p2(s%60)};
+function addMin(id,m){if(m<=0)return;const k=dayIdx();S.log[k]=(S.log[k]||0)+m;S.tmin[id]=(S.tmin[id]||0)+m;S.tday[k]=S.tday[k]||{};S.tday[k][id]=(S.tday[k][id]||0)+m;const tt=topics().find(t=>t.id===id);if(tt){S.tsub[k]=S.tsub[k]||{};S.tsub[k][tt.s]=(S.tsub[k][tt.s]||0)+m}save()}
+function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator();o.connect(a.destination);o.frequency.value=880;o.start();setTimeout(()=>{o.stop();a.close()},700)}catch(e){}}
+function tdone(auto){if(!TMR)return;const full=TMR.dur*60000,el=Math.min(full,TMR.end?full-(TMR.end-Date.now()):full-TMR.left),m=auto?TMR.dur:(el>=30000?Math.max(1,Math.round(el/60000)):0);addMin(TMR.id,m);LAST={id:TMR.id,m,auto};TMR=null;saveT();if(auto){try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}beep()}setSt(m?'⏱ '+bn(m)+' মিনিট যোগ হয়েছে':'');render()}
+function tick(){if(!READY||!TMR||!TMR.end)return;const left=TMR.end-Date.now();if(left<=0){tdone(true);return}const e=document.getElementById('tt');if(e)e.textContent=fmt(left)}
+setInterval(tick,500);document.addEventListener('visibilitychange',tick);
+function topicPage(){
+ const T=topics(),t=T.find(x=>x.id===VIEW);if(!t){VIEW=null;return render()}
+ const tot=S.tmin[t.id]||0,isT=TMR&&TMR.id===t.id,run=isT&&TMR.end,paused=isT&&!TMR.end,other=TMR&&!isT,left=run?Math.max(0,TMR.end-Date.now()):paused?TMR.left:0;
+ document.getElementById('app').innerHTML=`<button id="back" style="margin:8px 0">← ফিরে যান</button>
+ <div class="card"><div class="mut">${SUBJ[t.s][0]}</div><h2 style="font-size:24px">${t.n}</h2><div>⏱ মোট ${bn(tot/60)} ঘণ্টা (${bn(tot)} মিনিট)</div><div style="margin:4px 0 10px">${S.done[t.id]?'✓ পড়া শেষ':'○ এখনো শেষ হয়নি'}</div><button id="dn" class="${S.done[t.id]?'':'p'}">${S.done[t.id]?'শেষ হয়নি বলে মার্ক করুন':'পড়া শেষ ✓'}</button></div>
+ <div class="card"><h2>হাতে সময় যোগ করুন</h2><div style="display:flex;gap:6px;flex-wrap:wrap"><button data-qm="15">+১৫</button><button data-qm="30">+৩০</button><button data-qm="60">+৬০</button><input id="mi" type="number" min="1" max="600" placeholder="মিনিট" style="width:90px"><button class="p" id="ma">যোগ</button></div></div>
+ <div class="card" style="text-align:center"><h2>টাইমার</h2><div id="tt" class="big" style="font-size:64px;margin:8px 0">${fmt(isT?left:DUR*60000)}</div>
+ ${!TMR?`<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">${[15,25,45,60].map(n=>`<button data-du="${n}" class="${DUR===n?'p':''}">${bn(n)} মিনিট</button>`).join('')}<input id="cu" type="number" min="1" max="600" placeholder="নিজে দিন" style="width:110px"></div><button class="p" id="go" style="margin-top:14px;width:100%">▶ শুরু করুন</button>`:''}
+ ${run?`<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button id="ps">⏸ বিরতি</button><button class="p" id="sv">এখনই সেভ ও থামান</button></div>`:''}
+ ${paused?`<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="p" id="rs">▶ চালু করুন</button><button id="sv">সেভ ও থামান</button><button id="cn">বাতিল</button></div>`:''}
+ ${other?'<div class="mut">অন্য টপিকের টাইমার চলছে, আগে সেটা শেষ করুন</div>':''}
+ <div class="mut" style="margin-top:12px">সময় শেষ হলে নিজে থেকেই এই টপিকে যোগ হয়ে ডাটাবেজে সেভ হবে</div>
+ ${LAST&&LAST.id===t.id?`<div style="color:var(--ok);font-weight:600;margin-top:8px">${LAST.m?'✓ '+bn(LAST.m)+' মিনিট ডাটাবেজে যোগ হয়েছে':'খুব অল্প সময় ছিল, যোগ হয়নি'}</div>`:''}</div>`;
+ const $=id=>document.getElementById(id),on=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+ on('back',()=>{VIEW=null;render()});
+ on('go',()=>{LAST=null;TMR={id:t.id,dur:DUR,end:Date.now()+DUR*60000,left:null};saveT();render()});
+ on('ps',()=>{TMR.left=TMR.end-Date.now();TMR.end=null;saveT();render()});
+ on('rs',()=>{TMR.end=Date.now()+TMR.left;TMR.left=null;saveT();render()});
+ on('sv',()=>tdone(false));
+ on('cn',()=>{TMR=null;saveT();render()});
+ on('dn',()=>{if(S.done[t.id]){delete S.done[t.id];delete S.ddate[t.id]}else{S.done[t.id]=1;S.ddate[t.id]=dayIdx()}save();render()});
+ document.querySelectorAll('[data-du]').forEach(b=>b.onclick=()=>{DUR=+b.dataset.du;render()});
+ document.querySelectorAll('[data-qm]').forEach(b=>b.onclick=()=>{const m=+b.dataset.qm;addMin(t.id,m);LAST={id:t.id,m};render()});
+ on('ma',()=>{const v=Math.min(parseInt($('mi').value),600);if(v>0){addMin(t.id,v);LAST={id:t.id,m:v};render()}});
+ const cu=$('cu');if(cu)cu.onchange=()=>{const v=parseInt(cu.value);if(v>0)DUR=Math.min(v,600);render()};
+}
+let QV=null,QZ=null,FCI=0,FCS=false;
+const allQ=()=>QDB.filter(q=>(q.e||'bcs')===S.exam&&(!S.sel||S.sel.includes(q.s)));
+function startQuiz(){const di=dayIdx(),pool=allQ();if(!pool.length)return;const rk=a=>[...a].sort(()=>Math.random()-.5),fc=pool.filter(q=>S.fc[q.id]),rest=pool.filter(q=>!S.fc[q.id]),fresh=rest.filter(q=>S.qok[q.id]==null||di-S.qok[q.id]>=30),old=rest.filter(q=>!fresh.includes(q));const qs=[...rk(fc).slice(0,3),...rk(fresh),...rk(old)].slice(0,10);QZ={qs,i:0,ans:[],end:Date.now()+qs.length*45000};QV='quiz';render()}
+function finishQuiz(){if(!QZ||QV!=='quiz')return;const di=dayIdx();let c=0,w=0,sk=0;const wr=[];QZ.qs.forEach((q,i)=>{const a=QZ.ans[i];if(a==null||a<0)sk++;else if(a===q.a){c++;delete S.fc[q.id];S.qok[q.id]=di}else{w++;S.fc[q.id]=1;wr.push(q)}});const score=c-w*EXAMS[S.exam].neg;S.quiz[di]=S.quiz[di]||[];S.quiz[di].push({n:QZ.qs.length,c,w,sk,sc:score});QZ.res={c,w,sk,score,wr};QV='res';save();render()}
+setInterval(()=>{if(QV==='quiz'&&QZ){const l=QZ.end-Date.now();if(l<=0){finishQuiz();return}const e=document.getElementById('qt');if(e)e.textContent=fmt(l)}},1000);
+function quizPage(){
+ const A=document.getElementById('app'),$=id=>document.getElementById(id),on=(id,f)=>{const e=$(id);if(e)e.onclick=f},home=()=>{QV=null;QZ=null;render()},LB=['ক','খ','গ','ঘ'];
+ if(QV==='quiz'){const q=QZ.qs[QZ.i],n=QZ.qs.length;
+  A.innerHTML=`<div class="row" style="margin:8px 0"><button id="qx">✕ বন্ধ</button><b>প্রশ্ন ${bn(QZ.i+1)}/${bn(n)}</b><b id="qt" style="color:var(--red)">${fmt(QZ.end-Date.now())}</b></div><div class="card"><div class="mut">${SUBJ[q.s]?SUBJ[q.s][0]:''}</div><h2 style="font-size:20px;margin:6px 0 14px">${q.q}</h2>${q.o.map((o,i)=>`<button data-qa="${i}" style="display:block;width:100%;text-align:left;margin:8px 0;padding:12px">${LB[i]}. ${o}</button>`).join('')}<button data-qa="-1" style="margin-top:10px">এড়িয়ে যান</button> <button class="p" id="qd" style="margin-top:10px">এখনই জমা দিন</button></div>`;
+  document.querySelectorAll('[data-qa]').forEach(b=>b.onclick=()=>{QZ.ans[QZ.i]=+b.dataset.qa;if(QZ.i<n-1){QZ.i++;render()}else finishQuiz()});on('qd',finishQuiz);on('qx',home);return}
+ if(QV==='res'){const r=QZ.res;
+  A.innerHTML=`<div class="card"><h2>ফলাফল</h2><div class="big">${bn(r.score)}</div><div class="mut">${bn(QZ.qs.length)} নম্বরের মধ্যে (প্রতি ভুলে −${NEGT()})</div><div class="stats"><div><b style="color:var(--ok)">${bn(r.c)}</b><span class="mut">সঠিক</span></div><div><b style="color:var(--red)">${bn(r.w)}</b><span class="mut">ভুল</span></div><div><b>${bn(r.sk)}</b><span class="mut">এড়ানো</span></div></div></div>${r.wr.length?`<div class="card"><h2>যে প্রশ্নগুলো ভুল হয়েছে</h2>${r.wr.map(q=>`<div style="padding:8px 0;border-top:1px solid var(--line)"><div>${q.q}</div><div style="color:var(--ok)">✓ ${q.o[q.a]}</div></div>`).join('')}<div class="mut" style="margin-top:8px">এগুলো ফ্ল্যাশকার্ডে জমা হয়েছে</div></div>`:''}<button class="p" id="qh" style="width:100%">হোমে ফিরুন</button><button id="qr" style="width:100%;margin-top:8px">আবার দিন</button>`;
+  on('qh',home);on('qr',startQuiz);return}
+ if(QV==='fc'){const L=allQ().filter(q=>S.fc[q.id]);
+  if(!L.length){A.innerHTML=`<div class="card"><h2>ফ্ল্যাশকার্ড</h2><div class="mut">কোনো ভুল প্রশ্ন জমা নেই, চমৎকার!</div></div><button id="qh">← ফিরে যান</button>`;on('qh',home);return}
+  FCI=FCI%L.length;const q=L[FCI];
+  A.innerHTML=`<div class="row" style="margin:8px 0"><button id="qh">← ফিরে যান</button><b>${bn(FCI+1)}/${bn(L.length)}</b></div><div class="card"><div class="mut">${SUBJ[q.s]?SUBJ[q.s][0]:''}</div><h2 style="font-size:20px">${q.q}</h2>${q.o.map((o,i)=>`<div style="padding:6px 0">${LB[i]}. ${o}</div>`).join('')}${FCS?`<div style="color:var(--ok);font-weight:600;margin:10px 0">✓ সঠিক উত্তর: ${q.o[q.a]}</div><button class="p" id="fk">জানি ✓ (সরিয়ে দিন)</button> <button id="fn">আবার দেখব</button>`:`<button class="p" id="fs" style="margin-top:10px">উত্তর দেখুন</button>`}</div>`;
+  on('qh',home);on('fs',()=>{FCS=true;render()});on('fk',()=>{delete S.fc[q.id];FCS=false;save();render()});on('fn',()=>{FCI++;FCS=false;render()});return}
+ if(QV==='addq'){
+  A.innerHTML=`<div class="row" style="margin:8px 0"><button id="qh">← ফিরে যান</button></div><div class="card"><h2>নিজের প্রশ্ন যোগ করুন</h2><select id="aqs" style="width:100%;margin:6px 0">${SUBJ.map((s,i)=>S.sel&&!S.sel.includes(i)?'':`<option value="${i}">${s[0]}</option>`).join('')}</select><input id="aq" placeholder="প্রশ্ন" style="width:100%;margin:6px 0">${[1,2,3,4].map(i=>`<input id="ao${i}" placeholder="বিকল্প ${bn(i)}" style="width:100%;margin:6px 0">`).join('')}<select id="aa" style="width:100%;margin:6px 0">${[1,2,3,4].map(i=>`<option value="${i-1}">সঠিক উত্তর: বিকল্প ${bn(i)}</option>`).join('')}</select><div id="ae" style="margin:6px 0"></div><button class="p" id="as2" style="width:100%">যোগ করুন</button></div><div class="mut">এ পর্যন্ত নিজের ${bn(QDB.filter(x=>x.mine).length)}টি প্রশ্ন যোগ হয়েছে</div>`;
+  on('qh',home);on('as2',async()=>{const q=$('aq').value.trim(),o=[1,2,3,4].map(i=>$('ao'+i).value.trim());if(!q||o.some(x=>!x)){$('ae').style.color='var(--red)';$('ae').textContent='প্রশ্ন ও চারটি বিকল্প সব দিন';return}const r=await SB.from('ps_questions').insert({subject:+$('aqs').value,question:q,options:o,answer:+$('aa').value,created_by:UID,...(S.exam!=='bcs'?{exam:S.exam}:{})}).select().single();if(r.error){$('ae').style.color='var(--red)';$('ae').textContent='সেভ করা যায়নি';return}QDB.push({e:S.exam,id:'q'+r.data.id,s:r.data.subject,q:r.data.question,o:r.data.options,a:r.data.answer,mine:true,rid:r.data.id});render()});return}
+}
+function fixS(){S.subs=S.subs||[];S.over=S.over||{};S.tmin=S.tmin||{};S.ddate=S.ddate||{};S.tsub=S.tsub||{};S.tday=S.tday||{};S.rev=S.rev||{};S.rlast=S.rlast||{};S.exam=EXAMS[S.exam]?S.exam:'bcs';SUBJ.length=0;EXAMS[S.exam].s.forEach(x=>SUBJ.push(x));BASE=SUBJ.length;S.subs.forEach(s=>SUBJ.push([s.n,s.m,[]]))}
+
+async function afterLogin(user){
+ try{UID=user.id;UEMAIL=user.email||'';
+  const r=await SB.from('ps_state').select('data').eq('user_id',UID).maybeSingle();
+  let D=r.data&&r.data.data&&r.data.data.start?r.data.data:null;
+  S=D||{start:today0(),total:95,done:{},plan:{},log:{},custom:[]};fixS();
+  if(!S.name)S.name=(user.user_metadata&&user.user_metadata.name)||'';
+  const q=await SB.from('ps_questions').select('*');
+  QDB=(q.data||[]).map(x=>({e:x.exam||'bcs',id:'q'+x.id,s:x.subject,q:x.question,o:x.options,a:x.answer,mine:!!x.created_by,rid:x.id}));
+  if(!D)save();
+ }catch(e){}
+ READY=true;VIEW=null;QV=null;ONB=false;render()}
+function authPage(){
+ const A=document.getElementById('app'),$=id=>document.getElementById(id),v=RECOV?'newpw':AUTHV;
+ const ttl={login:'প্রবেশ করুন',signup:'নতুন অ্যাকাউন্ট তৈরি করুন',reset:'পাসওয়ার্ড রিসেট',newpw:'নতুন পাসওয়ার্ড দিন'}[v];
+ A.innerHTML=`<div class="card"><h2 style="font-size:24px">${ttl}</h2>
+ ${v==='signup'?'<input id="an" placeholder="আপনার নাম" style="width:100%;margin:6px 0">':''}
+ ${v!=='newpw'?'<input id="ae" type="email" placeholder="ইমেইল" autocomplete="email" style="width:100%;margin:6px 0">':''}
+ ${v==='login'||v==='signup'||v==='newpw'?'<input id="ap" type="password" placeholder="'+(v==='newpw'?'নতুন পাসওয়ার্ড':'পাসওয়ার্ড')+' (কমপক্ষে ৬ অক্ষর)" style="width:100%;margin:6px 0">':''}
+ <div id="am" style="margin:6px 0;color:${AOK?'var(--ok)':'var(--red)'}">${AMSG}</div>
+ <button class="p" id="ag" style="width:100%">${{login:'প্রবেশ',signup:'অ্যাকাউন্ট তৈরি করুন',reset:'রিসেট লিংক পাঠান',newpw:'পাসওয়ার্ড সেট করুন'}[v]}</button>
+ ${v==='login'?'<button id="a2" style="width:100%;margin-top:8px">＋ নতুন অ্যাকাউন্ট তৈরি করুন</button><button id="a3" style="width:100%;margin-top:8px">পাসওয়ার্ড ভুলে গেছেন?</button>':v==='newpw'?'':'<button id="a4" style="width:100%;margin-top:8px">← প্রবেশ পেজে ফিরে যান</button>'}</div>`;
+ const go=(x)=>{AUTHV=x;AMSG='';AOK=false;render()},msg=(t,ok)=>{AMSG=t;AOK=!!ok;$('am').style.color=ok?'var(--ok)':'var(--red)';$('am').textContent=t};
+ if($('a2'))$('a2').onclick=()=>go('signup');if($('a3'))$('a3').onclick=()=>go('reset');if($('a4'))$('a4').onclick=()=>go('login');
+ $('ag').onclick=async()=>{
+  const em=$('ae')?$('ae').value.trim():'',pw=$('ap')?$('ap').value:'';
+  if(v==='newpw'){if(pw.length<6){msg('কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন');return}
+   const r=await SB.auth.updateUser({password:pw});if(r.error){msg('পাসওয়ার্ড বদলানো যায়নি, আবার চেষ্টা করুন');return}
+   RECOV=false;AUTHV='login';const g=await SB.auth.getUser();if(g.data&&g.data.user)afterLogin(g.data.user);return}
+  if(!em){msg('ইমেইল দিন');return}
+  if(v==='reset'){const r=await SB.auth.resetPasswordForEmail(em,{redirectTo:location.origin+'/'});if(r.error){msg('পাঠানো যায়নি, কিছুক্ষণ পরে চেষ্টা করুন');return}msg('রিসেট লিংক ইমেইলে পাঠানো হয়েছে, ইনবক্স দেখুন',1);return}
+  if(pw.length<6){msg('কমপক্ষে ৬ অক্ষরের পাসওয়ার্ড দিন');return}
+  if(v==='signup'){const nm=$('an').value.trim();if(!nm){msg('নাম দিন');return}
+   const r=await SB.auth.signUp({email:em,password:pw,options:{data:{name:nm},emailRedirectTo:location.origin+'/'}});
+   if(r.error){msg(/registered|exists/i.test(r.error.message)?'এই ইমেইলে আগেই অ্যাকাউন্ট আছে':'অ্যাকাউন্ট তৈরি করা যায়নি: '+r.error.message);return}
+   AUTHV='login';msg('যাচাইয়ের লিংক ইমেইলে পাঠানো হয়েছে। লিংকে ক্লিক করে তারপর প্রবেশ করুন (স্প্যাম ফোল্ডারও দেখুন)',1);return}
+  const r=await SB.auth.signInWithPassword({email:em,password:pw});
+  if(r.error){msg(/confirm/i.test(r.error.message)?'আগে ইমেইলের যাচাই লিংকে ক্লিক করুন':'ইমেইল বা পাসওয়ার্ড ভুল')}
+ }}
+
+function onboard(){
+ const sel=S.sel||SUBJ.map((s,i)=>i),fv=v=>String(v||'').replace(/"/g,'&quot;'),exHtml=S.onboarded?`<div class="mut" style="margin-bottom:10px">পরীক্ষা: <b>${EXAMS[S.exam].n}</b></div>`:`<div style="margin-bottom:4px">কোন পরীক্ষার প্রস্তুতি নিচ্ছেন?</div>${Object.keys(EXAMS).map(k=>`<label style="display:flex;gap:10px;align-items:center;padding:8px 0"><input type="radio" name="ex" class="oex" value="${k}" ${S.exam===k?'checked':''} style="width:20px;height:20px"><span>${EXAMS[k].n}${EXAMS[k].s.every(x=>!x[2].length)?' <span class="mut">(সিলেবাস শীঘ্রই)</span>':''}</span></label>`).join('')}<div style="margin-bottom:12px"></div>`;
+ document.getElementById('app').innerHTML=`<div class="card"><h2 style="font-size:24px">${S.onboarded?'প্রোফাইল বদলান':'স্বাগতম! নিজের সম্পর্কে বলুন'}</h2><div class="mut" style="margin-bottom:12px">এই তথ্য দিয়ে আপনার প্ল্যান সাজানো হবে</div>
+ ${exHtml}<label>আপনার নাম<input id="on" value="${fv(S.name)}" style="width:100%;margin:4px 0 12px"></label>
+ <label>কত দিনে প্রস্তুতি শেষ করতে চান?<input id="od" type="number" min="1" max="1000" value="${S.onboarded?S.total:90}" style="width:100%;margin:4px 0 12px"></label>
+ <label>লক্ষ্য নম্বর (${bn(MX())}-এর মধ্যে)<input id="os" type="number" min="1" max="${MX()}" value="${Math.round(MX()*.65)}" style="width:100%;margin:4px 0 12px"></label>
+ <div style="margin-bottom:6px">কোন কোন বিষয়ে পড়তে চান?</div>
+ ${SUBJ.map((s,i)=>`<label style="display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)"><input type="checkbox" class="osb" value="${i}" ${sel.includes(i)?'checked':''} style="width:20px;height:20px"><span>${s[0]} <span class="mut">(${bn(s[1])} নম্বর)</span></span></label>`).join('')}
+ <div id="oe" style="color:var(--red);margin-top:8px"></div><button class="p" id="osv" style="width:100%;margin-top:10px">${S.onboarded?'সেভ করুন':'শুরু করুন'}</button>${S.onboarded?'<button id="oc" style="width:100%;margin-top:8px">বাতিল</button>':''}</div>`;
+ const $=id=>document.getElementById(id);
+ document.querySelectorAll('.oex').forEach(r=>r.onchange=()=>{S.name=$('on').value;S.exam=r.value;S.sel=null;fixS();onboard()});
+ $('osv').onclick=()=>{const nm=$('on').value.trim(),d=parseInt($('od').value),g=parseInt($('os').value),ch=[...document.querySelectorAll('.osb')].filter(x=>x.checked).map(x=>+x.value);
+  if(!nm||!(d>0)||!(g>0)||!ch.length){$('oe').textContent='নাম, দিন, নম্বর আর অন্তত একটি বিষয় দিন';return}
+  S.name=nm;S.total=d;S.goal=Math.min(g,MX());S.sel=ch;if(!S.onboarded)S.start=today0();S.onboarded=1;ONB=false;WK=null;save();render()};
+ const oc=$('oc');if(oc)oc.onclick=()=>{ONB=false;render()};
+}
+function render(){
+ if(!READY){document.getElementById('app').innerHTML='<div class="mut" style="padding:40px;text-align:center">লোড হচ্ছে…</div>';return}
+ if(!UID||RECOV)return authPage();
+ if(ONB||!S.onboarded)return onboard();
+ S.quiz=S.quiz||{};S.fc=S.fc||{};S.qok=S.qok||{};S.myq=S.myq||[];
+ if(QV){return quizPage()}
+ if(VIEW){return topicPage()}
+ const T=topics(),di=dayIdx(),left=Math.max(0,S.total-1-di),done=T.filter(t=>S.done[t.id]);
+ const tw=T.reduce((a,t)=>a+t.w,0),dw=done.reduce((a,t)=>a+t.w,0),score=tw?dw/tw*MX():0;
+ const ids=plan(),pt=ids.map(i=>T.find(t=>t.id===i)).filter(Boolean),pd=pt.filter(t=>S.done[t.id]).length;
+ const perDay=left?Math.ceil((T.length-done.length)/left*10)/10:0;
+ const mins=Object.values(S.log).reduce((a,b)=>a+b,0),wk=[0,1,2,3,4,5,6].reduce((a,k)=>a+(S.log[di-k]||0),0);
+ let grid='';for(let i=0;i<S.total;i++){const m=S.log[i]||0,l=m?Math.min(4,Math.ceil(m/75)):0;
+  const c=i===S.total-1?'var(--red)':`var(--l${l})`;grid+=`<span class="${i===di?'today':''}" style="background:${c}"></span>`}
+ const weak=T.filter(t=>!S.done[t.id]).sort((a,b)=>b.w-a.w).slice(0,6);
+ const opts=SUBJ.map((s,i)=>S.sel&&!S.sel.includes(i)?'':`<option value="${i}">${s[0]}</option>`).join('');
+ let st=0;for(let k=di;k>=0;k--){if(S.log[k])st++;else if(k!==di)break}
+ const best=Math.max(0,...Object.values(S.log)),pc=T.length?done.length/T.length*100:0;
+ const lv=pc<25?'নতুন শিক্ষার্থী':pc<50?'এগিয়ে চলছি':pc<75?'ভালো অবস্থানে':'প্রায় প্রস্তুত';
+ const scSub=SUBJ.map((s,i)=>{if(S.sel&&!S.sel.includes(i))return '';const ts=T.filter(t=>t.s===i),a=ts.reduce((x,t)=>x+t.w,0),d=ts.filter(t=>S.done[t.id]).reduce((x,t)=>x+t.w,0),e=a?d/a*s[1]:0;return `<div style="margin:8px 0"><div class="row"><span>${s[0]}</span><b>${bn(e)}/${bn(s[1])}</b></div><div class="bar" style="margin:4px 0"><i style="width:${a?d/a*100:0}%"></i></div></div>`}).join('');
+ const scHtml=`<div class="card"><h2>স্কোরবোর্ড</h2><div class="row"><span><span class="big">${bn(score)}</span> <span class="mut">/ ${bn(MX())}</span></span><span class="days" style="background:var(--l0);color:var(--ink)">${lv}</span></div><div class="stats"><div><b>${bn(pc)}%</b><span class="mut">কোর্স শেষ</span></div><div><b>${bn(st)}</b><span class="mut">টানা দিন</span></div><div><b>${bn(best/60)}</b><span class="mut">সেরা দিন (ঘণ্টা)</span></div></div>${scSub}</div>`;
+ const MN=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+ const dd=i=>{const m=S.log[i]||0,dt=new Date(S.start+i*DAY).toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long'}),fin=T.filter(t=>S.done[t.id]&&S.ddate[t.id]===i),sb=S.tsub[i]||{},td=S.tday[i]||{},pl=(S.plan[i]||[]).map(id=>T.find(t=>t.id===id)).filter(Boolean);
+ return `<div style="background:var(--l0);border-radius:14px;padding:12px;margin-top:10px;line-height:1.7"><b>${dt}</b><div class="mut">${m?bn(m/60)+' ঘণ্টা ('+bn(m)+' মিনিট) পড়া হয়েছে':'এই দিন সময় যোগ করা হয়নি'}</div>${Object.keys(sb).length?'<div style="margin-top:6px">বিষয়: '+Object.keys(sb).map(s=>(SUBJ[s]?SUBJ[s][0]:'')+' — '+bn(sb[s])+' মিনিট').join(', ')+'</div>':''}${pl.length?'<div style="margin-top:6px">এই দিনের তালিকা:</div>'+pl.map(t=>'<div>'+(S.done[t.id]?'✓':'○')+' '+t.n+'</div>').join(''):''}${fin.length?'<div style="margin-top:6px">✓ এই দিন শেষ করেছেন:</div>'+fin.map(t=>'<div>• '+t.n+'</div>').join(''):''}${Object.keys(td).length?'<div style="margin-top:6px">টপিকে সময়:</div>'+Object.keys(td).map(id=>{const t=T.find(x=>x.id===id);return t?'<div>• '+t.n+' — '+bn(td[id])+' মিনিট</div>':''}).join(''):''}</div>`};
+ let bg='';const nw=Math.ceil(S.total/7),cw=Math.min(Math.max(WK===null?Math.floor(di/7):WK,0),nw-1);for(let w=cw;w===cw;w++){bg+=`<span class="mut" style="font-size:12px;align-self:center">${bn(w+1)}</span>`;for(let d=0;d<7;d++){const i=w*7+d;if(i>=S.total){bg+='<span></span>';continue}const m=S.log[i]||0,l=m?Math.min(4,Math.ceil(m/75)):0,ex=i===S.total-1,c=ex?'var(--red)':`var(--l${l})`,sel=SEL&&SEL.src==='b'&&SEL.i===i;bg+=`<button data-d="b${i}" style="background:${c};color:${l>=3||ex?'#fff':'var(--ink)'};outline:${sel?'2px solid var(--ink)':i===di?'2px solid var(--pri)':'0'};border:1px solid var(--line);border-radius:8px;padding:0;height:38px;font-size:12px">${bn(i+1)}</button>`}}
+ const Y=new Date().getFullYear(),j1=new Date(Y,0,1),ynd=Math.round((new Date(Y+1,0,1)-j1)/DAY),mon=Array(12).fill(0);let yg='',ytot=0,ydays=0;
+ for(let n=0;n<ynd;n++){const d=new Date(Y,0,1+n),ix=Math.round((d-S.start)/DAY),m=S.log[ix]||0;mon[d.getMonth()]+=m;ytot+=m;if(m)ydays++;const l=m?Math.min(4,Math.ceil(m/75)):0,c=ix===S.total-1?'var(--red)':`var(--l${l})`,sel=SEL&&SEL.src==='y'&&SEL.i===ix;yg+=`<button data-d="y${ix}" style="${n===0?'grid-row-start:'+(j1.getDay()+1)+';':''}background:${c};outline:${sel?'2px solid var(--ink)':ix===di?'2px solid var(--pri)':'0'};border:1px solid var(--line);border-radius:3px;padding:0;width:13px;height:13px"></button>`}
+ const mx=Math.max(...mon,1),mbars=mon.map((m,i)=>`<div class="row" style="margin:5px 0"><span style="width:80px">${MN[i]}</span><div class="bar" style="flex:1;margin:0"><i style="width:${m/mx*100}%;background:var(--l3)"></i></div><b style="width:64px;text-align:right">${bn(m/60)} ঘ.</b></div>`).join('');
+ const yHtml=`<div class="card"><h2>${Y.toLocaleString('bn-BD',{useGrouping:false})} সালের হিসাব</h2><div class="stats"><div><b>${bn(ytot/60)}</b><span class="mut">মোট ঘণ্টা</span></div><div><b>${bn(ydays)}</b><span class="mut">দিন পড়েছেন</span></div><div><b style="font-size:18px">${ytot?MN[mon.indexOf(Math.max(...mon))]:'—'}</b><span class="mut">সেরা মাস</span></div></div><div style="overflow-x:auto;margin:14px 0"><div style="display:grid;grid-template-rows:repeat(7,13px);grid-auto-flow:column;grid-auto-columns:13px;gap:3px;width:max-content">${yg}</div></div><div class="mut">ঘরে ক্লিক করলে ওই দিনের বিবরণ · গাঢ় নীল = বেশি সময় · লাল = পরীক্ষার দিন</div>${SEL&&SEL.src==='y'?dd(SEL.i):''}<div style="margin-top:14px">${mbars}</div></div>`;
+ const G=Math.round(MX()*.65);
+ const goalHtml=`<div class="card"><h2>আমার লক্ষ্য</h2><div class="mut">কত দিনে প্রস্তুতি শেষ করতে চান আর কত নম্বর চান, নিজে ঠিক করুন</div><form id="gf"><input id="gd" type="number" min="1" max="1000" value="${S.total}" placeholder="মোট দিন"><input id="gs" type="number" min="1" max="${MX()}" value="${G}" placeholder="লক্ষ্য নম্বর"><button class="p">সেভ করুন</button></form><div class="mut" style="margin-top:8px">পরীক্ষার তারিখ: ${new Date(S.start+(S.total-1)*DAY).toLocaleDateString('bn-BD',{day:'numeric',month:'long',year:'numeric'})}</div><button id="ob" style="margin-top:10px">প্রোফাইল ও বিষয় বদলান</button></div>`;
+ const xlHtml=`<div class="card"><h2>ডাটাবেজ ও এক্সেল</h2><div class="mut">আপনার সব ডেটা ক্লাউডে আপনার অ্যাকাউন্টে সেভ থাকে। চাইলে এক্সেল ফাইলে ব্যাকআপ নিন।</div><button class="p" id="xl" style="margin-top:10px">এক্সেল (.xlsx) ডাউনলোড</button></div>`;
+ const userBar=`<div class="row" style="margin-bottom:8px"><b style="flex:1">👤 ${S.name||''}</b><button id="lo">লগআউট</button></div>`;
+ const pool=allQ(),tq=S.quiz[di]||[],lq=tq[tq.length-1],nfc=pool.filter(q=>S.fc[q.id]).length,nq=Math.min(10,pool.length);
+ const quizHtml=`<div class="card"><div style="color:var(--red);font-weight:600">দৈনিক পরীক্ষা</div><h2>${bn(nq)}টি প্রশ্ন · ${bn(Math.ceil(nq*0.75))} মিনিট</h2><div class="mut">প্রতি ভুলে −${NEGT()} · ভুল প্রশ্ন ফ্ল্যাশকার্ডে জমা হয়</div>${lq?`<div style="margin:8px 0">আজকের শেষ ফল: <b>${bn(lq.sc)}</b> (✓${bn(lq.c)} ✗${bn(lq.w)})</div>`:''}<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="p" id="qs" ${pool.length?'':'disabled'}>${tq.length?'আবার দিন':'শুরু করুন'}</button><button id="qf">ফ্ল্যাশকার্ড (${bn(nfc)})</button><button id="qa">＋ প্রশ্ন যোগ</button></div></div>`;
+ let fx=0;T.forEach(t=>{if(S.done[t.id]&&S.ddate[t.id]==null){S.ddate[t.id]=di;fx=1}});if(fx)save();
+ const pkl=T.filter(t=>!S.done[t.id]&&!ids.includes(t.id)),pickHtml=pkl.length?`<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px"><div class="mut" style="margin-bottom:6px">নিজের পছন্দের টপিক আজকের তালিকায় যোগ করুন</div><form id="pf" style="margin-top:0"><select id="ps2">${[...new Set(pkl.map(t=>t.s))].map(s=>`<option value="${s}">${SUBJ[s][0]}</option>`).join('')}</select><select id="pt2"></select><button class="p">＋ যোগ</button></form></div>`:'';
+ const GAP=[1,2,4,7,14],dueR=T.filter(t=>{const n=S.rev[t.id]||0;return S.done[t.id]&&n<GAP.length&&di>=(S.rlast[t.id]!=null?S.rlast[t.id]:S.ddate[t.id])+GAP[n]});
+ const revHtml=dueR.length?`<div class="card"><h2>রিভিশন</h2><div class="mut" style="margin:-6px 0 6px">আগে শেষ করা টপিক আবার ঝালিয়ে নিন, শেষ হলে টিক দিন</div>${dueR.map(t=>`<div class="task"><button class="chk" data-rv="${t.id}"></button><div class="t" data-go="${t.id}" style="cursor:pointer"><div class="mut">${SUBJ[t.s][0]} · রিভিশন ${bn((S.rev[t.id]||0)+1)}/${bn(GAP.length)}</div>${t.n}</div></div>`).join('')}</div>`:'';
+ const exs=new Set([...used(),...ids]),und=T.filter(t=>!S.done[t.id]);
+ let wkHtml='';for(let k=1;k<=7;k++){const ch=pickFor(di+k,exs,und,3,true);if(!ch.length)break;ch.forEach(t=>exs.add(t.id));const dt=new Date(today0()+k*DAY).toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'short'});wkHtml+=`<div class="w"><b>${dt}</b><span style="text-align:right">${ch.map(t=>`<div style="text-align:left"><button class="chk" data-t="${t.id}" style="width:22px;height:22px;vertical-align:middle"></button> ${t.n}</div>`).join('')}</span></div>`}
+ const mgHtml=T.map(t=>EDIT===t.id?`<div class="w"><input id="ei" value="${t.n.replace(/"/g,'&quot;')}" style="flex:1"><button class="p" data-sv="${t.id}">সেভ</button></div>`:`<div class="w"><span style="display:flex;gap:10px;align-items:center"><button class="chk ${S.done[t.id]?'on':''}" data-t="${t.id}">${S.done[t.id]?'✓':''}</button><span style="${S.done[t.id]?'text-decoration:line-through;opacity:.6':''};cursor:pointer" data-op="${t.id}">${t.n}<div class="mut">${SUBJ[t.s][0]}</div></span></span><span style="white-space:nowrap"><button data-ed="${t.id}">✎</button> <button data-dl="${t.id}">✕</button></span></div>${OPEN===t.id?`<div style="padding:4px 0 12px 36px;line-height:1.8"><div>⏱ ${bn((S.tmin[t.id]||0)/60)} ঘণ্টা পড়া হয়েছে (${bn(S.tmin[t.id]||0)} মিনিট)</div><div>${S.done[t.id]?'✓ পড়া শেষ'+(S.ddate[t.id]!=null?' · '+new Date(S.start+S.ddate[t.id]*DAY).toLocaleDateString('bn-BD',{day:'numeric',month:'short'}):''):'○ এখনো শেষ হয়নি'}</div><div class="mut">${SUBJ[t.s][0]} · গুরুত্ব ${bn(t.w)}</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button data-tm="${t.id}:15">+১৫ মিনিট</button><button data-tm="${t.id}:30">+৩০ মিনিট</button><button data-tm="${t.id}:60">+১ ঘণ্টা</button></div></div>`:''}`).join('');
+ document.getElementById('app').innerHTML=`
+ ${userBar}<div class="row"><div><div class="mut">${new Date().toLocaleDateString('bn-BD',{weekday:'long',day:'numeric',month:'long'})}</div>
+ <h2 style="font-size:28px;margin:4px 0">আজ যা পড়বেন</h2><div class="mut">শুভেচ্ছা, ${S.name||''}</div></div>
+ <div class="days"><b>${bn(left)}</b>দিন বাকি</div></div>
+ <div class="row mut" style="margin-top:12px"><div class="bar" style="flex:1"><i style="width:${pt.length?pd/pt.length*100:0}%"></i></div><b>${bn(pd)}/${bn(pt.length)} শেষ</b></div>
+ <div class="card">${pt.length?pt.map(t=>`<div class="task ${S.done[t.id]?'done':''}"><button class="chk ${S.done[t.id]?'on':''}" data-t="${t.id}">${S.done[t.id]?'✓':''}</button><div class="t" data-go="${t.id}" style="cursor:pointer"><div class="mut">${SUBJ[t.s][0]}</div>${t.n}</div><span class="mut" data-go="${t.id}" style="cursor:pointer;font-size:20px">${TMR&&TMR.id===t.id?'⏱':'▶'}</span></div>`).join(''):'<div class="mut">'+(T.length?'সব টপিক শেষ, চমৎকার!':'এই পরীক্ষার সিলেবাস শীঘ্রই যোগ হবে। চাইলে নিচে "নতুন টপিক যোগ করুন" থেকে নিজের টপিক দিন।')+'</div>'}${pd===pt.length&&T.some(t=>!S.done[t.id]&&!ids.includes(t.id))?'<button class="p" id="more" style="width:100%;margin-top:12px">আরও ৩টি টপিক নিন</button>':''}${pickHtml}</div>
+ ${quizHtml}
+ ${revHtml}
+ <div class="card"><h2>প্রস্তুতি</h2><span class="big">${bn(score)}</span> <span class="mut">/ ${bn(MX())} সম্ভাব্য নম্বর</span>
+ <div style="color:var(--red);font-weight:600">লক্ষ্য ${bn(G)}, ${score>=G?'লক্ষ্য পূরণ!':'পিছিয়ে '+bn(G-score)}</div>
+ <div class="bar"><i style="width:${Math.min(100,score/MX()*100)}%;background:var(--ink)"></i></div>
+ <div class="stats"><div><b>${bn(done.length)}/${bn(T.length)}</b><span class="mut">টপিক শেষ</span></div><div><b>${bn(perDay)}</b><span class="mut">টপিক/দিন লাগবে</span></div><div><b>${bn(left)}</b><span class="mut">দিন বাকি</span></div></div></div>
+ ${goalHtml}
+ ${scHtml}
+ <div class="card"><div class="row"><h2>৭ দিনের বোর্ড</h2><span class="mut">দিন ${bn(di+1)} / ${bn(S.total)}</span></div><div class="row" style="margin:8px 0"><button data-wk="-1">◀</button><b>সপ্তাহ ${bn(cw+1)} / ${bn(nw)}</b><button data-wk="1">▶</button></div>
+ <div class="stats"><div><b>${bn(mins/60)}</b><span class="mut">মোট ঘণ্টা</span></div><div><b>${bn(wk/60)}</b><span class="mut">গত ৭ দিন (ঘণ্টা)</span></div><div><b>${bn(Object.keys(S.log).length)}</b><span class="mut">দিন পড়েছেন</span></div></div>
+ <div style="display:grid;grid-template-columns:22px repeat(7,1fr);gap:5px;margin:14px 0">${bg}</div><div class="mut">প্রতি সারি = ৭ দিন · ঘরে ক্লিক করলে ওই দিনের বিবরণ · লাল ঘর = পরীক্ষার দিন</div>${SEL&&SEL.src==='b'?dd(SEL.i):''}
+ <form id="lf"><select id="ls">${opts}</select><select id="lm"><option value="30">৩০ মিনিট</option><option value="60">১ ঘণ্টা</option><option value="120">২ ঘণ্টা</option><option value="180">৩ ঘণ্টা</option></select><button class="p">যোগ করুন</button></form></div>
+ ${yHtml}
+ <div class="card"><h2>আগামী ৭ দিনের আনুমানিক প্ল্যান</h2><div class="mut" style="margin:-6px 0 6px">প্রতি সপ্তাহে টপিকের ক্রম এলোমেলো বদলায়। টিক দিলে টপিক শেষ হয়।</div>${wkHtml||'<div class="mut">আর কোনো টপিক বাকি নেই</div>'}</div>
+ <div class="card"><h2>বেশি নম্বরের বাকি টপিক</h2>${weak.map(t=>`<div class="w"><span>${t.n}</span><b class="mut">${bn(t.w)}</b></div>`).join('')||'<div class="mut">কিছু বাকি নেই</div>'}</div>
+ <div class="card"><h2>বিষয় এক নজরে</h2>${SUBJ.map((s,i)=>{if(S.sel&&!S.sel.includes(i))return '';const ts=T.filter(t=>t.s===i),d=ts.filter(t=>S.done[t.id]).length,p=ts.length?d/ts.length*100:0;
+ return `<div class="sub"><div class="ring" style="background:conic-gradient(var(--ok) ${p}%,var(--l0) 0)"><i>${bn(d)}</i></div><div><b>${s[0]}</b><div class="mut">${bn(s[1])} নম্বর · ${bn(d)}/${bn(ts.length)} টপিক</div></div></div>`}).join('')}</div>
+ <div class="card"><h2>টপিক ম্যানেজ করুন</h2><div class="mut" style="margin:-6px 0 6px">টপিকের নামে ক্লিক করলে পড়ার সময় ও অবস্থা দেখাবে</div>${mgHtml}</div>
+ <div class="card"><h2>নতুন টপিক যোগ করুন</h2><form id="af"><select id="as">${opts}</select><input id="an" placeholder="টপিকের নাম" required><input id="aw" type="number" step="0.1" min="0" placeholder="গুরুত্ব (যেমন ৩.৫)"><button class="p">যোগ</button></form>
+ <h2 style="margin-top:18px">নতুন বিষয় যোগ করুন</h2><form id="sf"><input id="sn" placeholder="বিষয়ের নাম" required><input id="sm" type="number" min="1" placeholder="নম্বর"><button class="p">যোগ</button></form>
+ <hr style="border:0;border-top:1px solid var(--line);margin:14px 0"><form id="df"><input id="dd" type="date" required><button>পরীক্ষার তারিখ ঠিক করুন</button></form></div>`;
+ document.querySelectorAll('.chk').forEach(b=>b.onclick=()=>{const t=b.dataset.t;if(S.done[t]){delete S.done[t];delete S.ddate[t]}else{S.done[t]=1;S.ddate[t]=dayIdx()}save();render()});
+ document.getElementById('lf').onsubmit=e=>{e.preventDefault();const k=dayIdx(),mm=Number(document.getElementById('lm').value),ss=document.getElementById('ls').value;S.log[k]=(S.log[k]||0)+mm;S.tsub[k]=S.tsub[k]||{};S.tsub[k][ss]=(S.tsub[k][ss]||0)+mm;save();render()};
+ document.getElementById('af').onsubmit=e=>{e.preventDefault();S.custom.push({s:+document.getElementById('as').value,n:document.getElementById('an').value,w:+document.getElementById('aw').value||3});save();render()};
+ document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const v=b.dataset.d,src=v[0],i=parseInt(v.slice(1));SEL=SEL&&SEL.src===src&&SEL.i===i?null:{src,i};render()});
+ const ps2=document.getElementById('ps2');if(ps2){const pt2=document.getElementById('pt2'),fill=()=>{pt2.innerHTML=pkl.filter(t=>t.s===+ps2.value).map(t=>`<option value="${t.id}">${t.n}</option>`).join('')};fill();ps2.onchange=fill;document.getElementById('pf').onsubmit=e=>{e.preventDefault();const id=pt2.value;if(!id)return;const k=String(dayIdx());S.plan[k]=(S.plan[k]||[]).concat(id);save();render()}}
+ const q1=document.getElementById('qs');if(q1)q1.onclick=startQuiz;
+ const q2=document.getElementById('qf');if(q2)q2.onclick=()=>{FCI=0;FCS=false;QV='fc';render()};
+ const q3=document.getElementById('qa');if(q3)q3.onclick=()=>{QV='addq';render()};
+  const lo=document.getElementById('lo');if(lo)lo.onclick=async()=>{await SB.auth.signOut();UID=null;S=null;render()};
+   const ob=document.getElementById('ob');if(ob)ob.onclick=()=>{ONB=true;window.scrollTo(0,0);render()};
+ document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>{const id=b.dataset.rv;S.rev[id]=(S.rev[id]||0)+1;S.rlast[id]=di;save();render()});
+ document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.go;window.scrollTo(0,0);render()});
+ document.querySelectorAll('[data-wk]').forEach(b=>b.onclick=()=>{WK=Math.min(Math.max(cw+ +b.dataset.wk,0),nw-1);render()});
+ document.getElementById('gf').onsubmit=e=>{e.preventDefault();const n=parseInt(document.getElementById('gd').value),g=parseInt(document.getElementById('gs').value);if(n>0)S.total=n;if(g>0)S.goal=Math.min(g,MX());WK=null;save();render()};
+ 
+ const mb=document.getElementById('more');if(mb)mb.onclick=()=>{const k=String(dayIdx()),cur=S.plan[k]||[];const us=used(),base=topics().filter(t=>!S.done[t.id]&&!cur.includes(t.id)),list=base.filter(t=>!us.has(t.id)).sort(()=>Math.random()-.5).concat(base.filter(t=>us.has(t.id))),pk=[],sn=new Set();list.forEach(t=>{if(pk.length<3&&!sn.has(t.s)){sn.add(t.s);pk.push(t)}});list.forEach(t=>{if(pk.length<3&&!pk.includes(t))pk.push(t)});S.plan[k]=cur.concat(pk.map(t=>t.id));save();render()};
+ document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>{OPEN=OPEN===b.dataset.op?null:b.dataset.op;render()});
+ document.querySelectorAll('[data-tm]').forEach(b=>b.onclick=()=>{const[i,m]=b.dataset.tm.split(':');S.tmin[i]=(S.tmin[i]||0)+ +m;const k=dayIdx();S.log[k]=(S.log[k]||0)+ +m;S.tday[k]=S.tday[k]||{};S.tday[k][i]=(S.tday[k][i]||0)+ +m;const tt=topics().find(t=>t.id===i);if(tt){S.tsub[k]=S.tsub[k]||{};S.tsub[k][tt.s]=(S.tsub[k][tt.s]||0)+ +m}save();render()});
+ document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{EDIT=b.dataset.ed;render()});
+ document.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const v=document.getElementById('ei').value.trim();if(v){S.over[b.dataset.sv]=Object.assign(S.over[b.dataset.sv]||{},{n:v});save()}EDIT=null;render()});
+ document.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{S.over[b.dataset.dl]={del:1};save();render()});
+ document.getElementById('sf').onsubmit=e=>{e.preventDefault();const n=document.getElementById('sn').value.trim(),m=+document.getElementById('sm').value||10;if(!n)return;S.subs.push({n,m});SUBJ.push([n,m,[]]);if(S.sel)S.sel.push(SUBJ.length-1);save();render()};
+ document.getElementById('df').onsubmit=e=>{e.preventDefault();const d=new Date(document.getElementById('dd').value);d.setHours(0,0,0,0);
+  const n=Math.round((d-S.start)/DAY)+1;if(n>1){S.total=n;save();render()}};
+}
+document.getElementById('theme').onclick=()=>{const r=document.documentElement,d=r.dataset.theme==='dark';r.dataset.theme=d?'light':'dark'};
+render();
+SB.auth.onAuthStateChange((ev,sess)=>{
+ if(ev==='PASSWORD_RECOVERY'){RECOV=true;READY=true;setTimeout(render,0);return}
+ if(sess&&sess.user){if(UID!==sess.user.id)setTimeout(()=>afterLogin(sess.user),0)}
+ else{UID=null;S=null;READY=true;setTimeout(render,0)}
+});
+</script>
+</body>
+</html>
