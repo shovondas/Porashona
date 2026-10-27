@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>পড়াশোনা সাথী</title>
+<style>
+:root{--bg:#f3f1ea;--card:#faf9f5;--ink:#1c1b18;--mut:#6b675e;--line:#dcd8cb;--pri:#0a6cf0;--ok:#2a6b46;--red:#b32d1e;--l0:#e8e4da;--l1:#adc3dc;--l2:#79a1d3;--l3:#3b7bd0;--l4:#0b5fcc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1917;--card:#23221f;--ink:#f0ede4;--mut:#a09b8f;--line:#3a3833;--l0:#35332e}}
+:root[data-theme="dark"]{--bg:#1a1917;--card:#23221f;--ink:#f0ede4;--mut:#a09b8f;--line:#3a3833;--l0:#35332e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans Bengali","Hind Siliguri",system-ui,sans-serif;line-height:1.5}
+main{max-width:640px;margin:0 auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+h1{font-size:22px;margin:0;color:#0aa77a}
+h2{font-size:18px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin:14px 0}
+.mut{color:var(--mut);font-size:14px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+button,select,input{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+button.p{background:var(--pri);color:#fff;border:0}
+.days{background:#f5e3e0;color:var(--red);border-radius:16px;padding:8px 16px;text-align:center}
+.days b{font-size:34px;display:block;line-height:1.1}
+.bar{height:8px;background:var(--l0);border-radius:8px;overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;background:var(--ok)}
+.task{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.task:first-of-type{border-top:0}
+.chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);flex:none;padding:0;background:none}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.task.done .t{text-decoration:line-through;color:var(--mut)}
+.t{flex:1}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stats b{font-size:24px;display:block}
+.big{font-size:44px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(15,1fr);gap:4px;margin:14px 0}
+.grid span{aspect-ratio:1;border-radius:5px;border:1px solid var(--line)}
+.grid .today{outline:2px solid var(--ink)}
+ <hr style="border:0;border-top:1px solid var(--line);margin:14px 0"><form id="df"><input id="dd" type="date" required><button>পরীক্ষার তারিখ ঠিক করুন</button></form></div>`;
+ document.querySelectorAll('.chk').forEach(b=>b.onclick=()=>{const t=b.dataset.t;if(S.done[t]){delete S.done[t];delete S.ddate[t]}else{S.done[t]=1;S.ddate[t]=dayIdx()}save();render()});
+ document.getElementById('lf').onsubmit=e=>{e.preventDefault();const k=dayIdx(),mm=Number(document.getElementById('lm').value),ss=document.getElementById('ls').value;S.log[k]=(S.log[k]||0)+mm;S.tsub[k]=S.tsub[k]||{};S.tsub[k][ss]=(S.tsub[k][ss]||0)+mm;save();render()};
+ document.getElementById('af').onsubmit=e=>{e.preventDefault();S.custom.push({s:+document.getElementById('as').value,n:document.getElementById('an').value,w:+document.getElementById('aw').value||3});save();render()};
+ document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const v=b.dataset.d,src=v[0],i=parseInt(v.slice(1));SEL=SEL&&SEL.src===src&&SEL.i===i?null:{src,i};render()});
+ const ps2=document.getElementById('ps2');if(ps2){const pt2=document.getElementById('pt2'),fill=()=>{pt2.innerHTML=pkl.filter(t=>t.s===+ps2.value).map(t=>`<option value="${t.id}">${t.n}</option>`).join('')};fill();ps2.onchange=fill;document.getElementById('pf').onsubmit=e=>{e.preventDefault();const id=pt2.value;if(!id)return;const k=String(dayIdx());S.plan[k]=(S.plan[k]||[]).concat(id);save();render()}}
+ const q1=document.getElementById('qs');if(q1)q1.onclick=startQuiz;
+ const q2=document.getElementById('qf');if(q2)q2.onclick=()=>{FCI=0;FCS=false;QV='fc';render()};
+ const q3=document.getElementById('qa');if(q3)q3.onclick=()=>{QV='addq';render()};
+  const lo=document.getElementById('lo');if(lo)lo.onclick=async()=>{await SB.auth.signOut();UID=null;S=null;render()};
+   const ob=document.getElementById('ob');if(ob)ob.onclick=()=>{ONB=true;window.scrollTo(0,0);render()};
+ document.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>{const id=b.dataset.rv;S.rev[id]=(S.rev[id]||0)+1;S.rlast[id]=di;save();render()});
+ document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.go;window.scrollTo(0,0);render()});
+ document.querySelectorAll('[data-wk]').forEach(b=>b.onclick=()=>{WK=Math.min(Math.max(cw+ +b.dataset.wk,0),nw-1);render()});
+ document.getElementById('gf').onsubmit=e=>{e.preventDefault();const n=parseInt(document.getElementById('gd').value),g=parseInt(document.getElementById('gs').value);if(n>0)S.total=n;if(g>0)S.goal=Math.min(g,MX());WK=null;save();render()};
+ 
+ const mb=document.getElementById('more');if(mb)mb.onclick=()=>{const k=String(dayIdx()),cur=S.plan[k]||[];const us=used(),base=topics().filter(t=>!S.done[t.id]&&!cur.includes(t.id)),list=base.filter(t=>!us.has(t.id)).sort(()=>Math.random()-.5).concat(base.filter(t=>us.has(t.id))),pk=[],sn=new Set();list.forEach(t=>{if(pk.length<3&&!sn.has(t.s)){sn.add(t.s);pk.push(t)}});list.forEach(t=>{if(pk.length<3&&!pk.includes(t))pk.push(t)});S.plan[k]=cur.concat(pk.map(t=>t.id));save();render()};
+ document.querySelectorAll('[data-op]').forEach(b=>b.onclick=()=>{OPEN=OPEN===b.dataset.op?null:b.dataset.op;render()});
+ document.querySelectorAll('[data-tm]').forEach(b=>b.onclick=()=>{const[i,m]=b.dataset.tm.split(':');S.tmin[i]=(S.tmin[i]||0)+ +m;const k=dayIdx();S.log[k]=(S.log[k]||0)+ +m;S.tday[k]=S.tday[k]||{};S.tday[k][i]=(S.tday[k][i]||0)+ +m;const tt=topics().find(t=>t.id===i);if(tt){S.tsub[k]=S.tsub[k]||{};S.tsub[k][tt.s]=(S.tsub[k][tt.s]||0)+ +m}save();render()});
+ document.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{EDIT=b.dataset.ed;render()});
+ document.querySelectorAll('[data-sv]').forEach(b=>b.onclick=()=>{const v=document.getElementById('ei').value.trim();if(v){S.over[b.dataset.sv]=Object.assign(S.over[b.dataset.sv]||{},{n:v});save()}EDIT=null;render()});
+ document.querySelectorAll('[data-dl]').forEach(b=>b.onclick=()=>{S.over[b.dataset.dl]={del:1};save();render()});
+ document.getElementById('sf').onsubmit=e=>{e.preventDefault();const n=document.getElementById('sn').value.trim(),m=+document.getElementById('sm').value||10;if(!n)return;S.subs.push({n,m});SUBJ.push([n,m,[]]);if(S.sel)S.sel.push(SUBJ.length-1);save();render()};
+ document.getElementById('df').onsubmit=e=>{e.preventDefault();const d=new Date(document.getElementById('dd').value);d.setHours(0,0,0,0);
+  const n=Math.round((d-S.start)/DAY)+1;if(n>1){S.total=n;save();render()}};
+}
+document.getElementById('theme').onclick=()=>{const r=document.documentElement,d=r.dataset.theme==='dark';r.dataset.theme=d?'light':'dark'};
+render();
+SB.auth.onAuthStateChange((ev,sess)=>{
+ if(ev==='PASSWORD_RECOVERY'){RECOV=true;READY=true;setTimeout(render,0);return}
+ if(sess&&sess.user){if(UID!==sess.user.id)setTimeout(()=>afterLogin(sess.user),0)}
+ else{UID=null;S=null;READY=true;setTimeout(render,0)}
+});
+</script>
+</body>
+</html>
