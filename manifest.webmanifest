@@ -1,0 +1,19 @@
+{
+  "name": "পড়াশোনা সাথী",
+  "short_name": "পড়াশোনা",
+  "description": "ব্যক্তিগত পড়াশোনার রুটিন ও অগ্রগতি",
+  "lang": "bn",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f3f1ea",
+  "theme_color": "#0a6cf0",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
